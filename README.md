@@ -1,111 +1,401 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/BNrQSMzB)
-# Relational Data Project: Data Storytelling with a Database
+# Underrated Cinema Analytics
 
-## Assignment Summary 
+A relational data analysis project that uses IMDb movie metadata, SQLite, Python, Pandas, and Matplotlib to identify and visualize underrated films across genre, region, language, and decade.
 
-For this project, students will use SQLite and Python to work with a real-world dataset and tell a data-driven story based on their use of these tools. Specifically, students working in teams will begin with IMDB data in .db format and will query, analyze, and visualize data in order to make an interactive Jupyter Notebook (`.ipynb`) with a static counterpart file (`.html`). Students will be evaluated based on the quality of their technical implementations; their research and writing; and their success building on and effectively synthesizing multiple aspects of the relational data unit.
+## Overview
 
-## Assignment Purpose
+Underrated Cinema Analytics is a notebook-based data storytelling project built around a core research question: which movies appear to be high quality but under-recognized by IMDb users?
 
-This assignment asks students to fulfill the following learning goals:
+The project defines an "underrated" movie as a title with:
 
-1. Demonstrate their understanding of relational data, including tables, columns, relationships, and querying strategies
-2. Use SQLite/python effectively to facilitate data analysis
-3. Synthesize various aspects of the relational data unit in service of a cohesive data story 
-4. Effectively communicate what we have learned in this unit with code, visuals, and text, culiminating with a polished `.html` document
-5. Use collaboration and version control to generate and document reproducible code
+- `averageRating > 7.5`
+- `numVotes < 10000`
 
-These learning goals are crucial to data analytics and computer science curriculum because relational data is often a core component of modeling complex relationships among data, designing and maintaining sustainable, secure, multi-user data integrations, and working at scale. In our previous unit, we learned that it is __typical in data analysis to convert__ relational data into a tabular format in order to perform common tasks like creating results pages, visualizing data, and conducting statistical analysis or machine learning. However, understanding how to make use of relational data is often core to these workflows. 
+Using those criteria, the notebook queries a relational IMDb database, joins normalized movie metadata into an analysis-ready table, computes descriptive statistics, and produces ranked tables and visualizations for several dimensions of cinema discovery. The intended audience includes data analysts, students, film researchers, and technically curious movie fans who want to explore lesser-known films with transparent, reproducible SQL and Python workflows.
 
-## Assignment Files
+The analysis workflow is:
 
-To get started on this assignment, your team will visit the Github Classroom link and follow the assignment checkout process for team-based assignments. The Github Classroom link will be shared on Canvas. The assignment files will include datasets, metadata files, and a Jupyter Notebook assignment template  (`submission.ipynb`).
+1. Connect to a local SQLite IMDb database.
+2. Join title, rating, alternate-title, region, language, and genre tables.
+3. Materialize a reusable `joined_table`.
+4. Establish an analytical threshold for "underrated" movies.
+5. Query underrated films overall and by category.
+6. Convert query results into Pandas DataFrames.
+7. Visualize decade, region, and genre distributions with Matplotlib.
+8. Document findings in a Jupyter Notebook data story.
 
-__IMDB Data:__ The Internet Movie Database (IMDB) offers a Developer API for real-time access to its core data, which is available for commercial use. It also provides a collection of "Non-Commercial Datasets" that can be accessed for bulk download. These datasets are available online as flat files (.csv format) and, together, they make up the skeletal structure of a series of interconnected tables like we would expect to find in a relational database. I have create a basic version of this database for you to use. 
+## Features
 
-The IMDB dataset is quite large, which means it exceeds Github's file size limits. Collectively, there are seven data tables requiring about 6.83 GBs of hard disk space to download (Non-Commercial). `The .db files `imdb_full.db` is about 3GB. The data are available for download via a Google Drive folder link (on Canvas) and will be made available via the Ohio Supercomputer Center (OSC), which offers cloud-based resources for students (more details about OSC will be covered in class).
+- SQLite-backed analysis of IMDb movie metadata.
+- Relational joins across movie title, rating, alternate title, language, region, and genre tables.
+- Reusable denormalized analysis table named `joined_table`.
+- Custom SQL median-vote calculation using SQLite window functions and common table expressions.
+- Ranked underrated movie lists:
+  - Top underrated movies overall.
+  - Top underrated movie per genre.
+  - Top underrated movie per region.
+  - Top underrated movies by decade.
+  - Top underrated movie by ISO language code.
+- ISO language-code enrichment through `data/iso-language-codes.csv`.
+- Pandas DataFrame presentation for tabular analysis.
+- Matplotlib bar charts for:
+  - Underrated movie counts by decade.
+  - Top regions by underrated movie count.
+  - Underrated movie counts by genre.
+- Embedded narrative analysis, ethical considerations, methodology, and references inside the notebook.
 
-## Assignment Details
+## Architecture
 
-The core task of this assignment is to author a data-driven story that uses SQL statements to support both visualizations and descriptive analysis of the underlying data. As with the tabular data assignment, your data-driven story has a set of required technical components that can be implemented in any way that you choose. The data-driven story submission will mix Python code and markdown text to tell a compelling story focused on a topic or question. You will create your data-driven stories using Jupyter Notebook files, and you will submit your work in both `.ipynb` and `.html` formats. Submissions should adhere to the following formatting guidelines: 
+This repository is a local analytics project, not a deployed web application. Its architecture is intentionally simple: a Jupyter Notebook orchestrates SQLite queries, Pandas transformations, and Matplotlib visualizations over local data files.
 
-| Component  | Description |
-|------------|-------------|
-| Title  | Brief and informative, gives some idea of your core question or topic area. |
-| Introduction | Include core background information and ethical considerations relevant to initial data collection and contemporary use of the data. Articulate your core question or topic area. |
-| Database Design | Discuss how the database is structured, and how you have used this information to design your querying strategy. Discuss directly how this approach relates to the topic you decided to explore. |
-| Data Exploration | Use a blend of descriptive statistics and data visualizations to explore your core question or topic. Include code blocks. Discuss potential areas for deeper analysis based on the data. |
-| Uses of Python - Technical Components | Fill in the submission template table with information about how you satisfied the technical requirements of the assignment. |
-| Uses of Python - Reflection | Take a step back and analyze your own use of code. Provide some rationale for choices you've made. Considerations may include performance, human readability, code dependencies, and reproducibility. |
-| References   | List all works cited in the data guide. Use proper APA format.  |
+```mermaid
+flowchart LR
+    A[IMDb SQLite database] --> B[Jupyter Notebook]
+    C[ISO language-code CSV] --> B
+    B --> D[SQL joins and filters]
+    D --> E[joined_table]
+    E --> F[Pandas DataFrames]
+    F --> G[Matplotlib visualizations]
+    G --> H[Notebook data story]
+```
 
-__Technical Components:__
+### Data Layer
 
-Somewhere in your submission, your team is required to:
+The repository includes a SQLite database at `data/imdb_subset.db`. It contains the following tables:
 
-- use at least three complex SQL queries in your final notebook 
-- anywhere within these three queries, use:
-	- at least one table join
-	- at least one GROUP BY clause
-	- at least one WHERE clause
-	- at least LIKE, HAVING, LIMIT, or ORDER BY clause
-	- at least one SQLite function such as count, max, min, random, round, substr, group_concat, etc.
-- display inline at least three data visualizations (using matplotlib, seaborn, etc.)
+| Table | Purpose | Key Fields |
+| --- | --- | --- |
+| `title_basics` | Base movie metadata | `titleId`, `titleType`, `primaryTitle`, `originalTitle`, `startYear`, `runtimeMinutes` |
+| `title_akas` | Alternate title metadata, including region and language | `titleId`, `region`, `language`, `title` |
+| `genres` | Genre assignments by title | `titleId`, `genre` |
+| `ratings` | IMDb rating and vote metrics | `titleId`, `averageRating`, `numVotes` |
+| `joined_table` | Denormalized table used by the notebook analysis | `titleId`, `primaryTitle`, `averageRating`, `numVotes`, `region`, `language`, `genre` |
 
-## Assessment Criteria 
+The normalized tables reference `title_basics.titleId` through foreign keys from `title_akas`, `genres`, and `ratings`.
 
-Submissions will be evaluated on technical content; research and writing; and how well the submission comes together as a whole. The following descriptive rubric will be used when grading.
+### Notebook Orchestration
 
-### Technical Content
+`IMDB_Underrated_Analysis.ipynb` is the primary executable artifact. It performs database access, SQL execution, DataFrame construction, enrichment with language-code data, and visualization.
 
-- attention is paid to the complexities of the source data (missing data, coded values, sample weighting, etc.)
-- relational data structures are used critically and support the data story effectively
-- SQLite3 and helper functions are used properly; submission uses all required code components correctly
-- data visualizations are properly coded, sufficiently polished, and used effectively in support of the data story
+The notebook uses:
 
-### Research and Writing
+- `sqlite3` for database connectivity and SQL execution.
+- `pandas` for tabular analysis and CSV merging.
+- `matplotlib` for charting.
+- `numpy` for chart positioning.
+- `IPython.display` for styled in-notebook table presentation.
 
-- sufficient attention has been paid to proofreading
-- external sources are used to enhance the submission, and sources are properly cited (APA style)
-- the project is well organized, flows logically, and follows the all formatting guidelines
-- the submission's use of language is appropriate for a well-informed, less technical reader
+### Frontend
 
-### Big Picture 
+There is no web frontend in this repository. The user interface is the Jupyter Notebook itself, including rendered Markdown, DataFrames, styled tables, and inline plots.
 
-- all materials are turned in on time and in the right place
-- assignment directions are followed, and all required components are included in the submission
-- proper documentation and version control methods are used to facilitate collaboration and reproducibility
-- the submission provides sufficient details or points to supplementary materials that make the research reproducible (e.g. detailed footnotes, appendices, links to GitHub, etc.)
-- submitted materials build on multiple takeaways from the relational data unit and synthesize them effectively 
+### Backend and APIs
 
-## Assignment Details
+There is no backend server and no implemented API layer. All processing runs locally inside the notebook process.
 
-__Accessing assignment files:__ via Github Classroom (linked on Canvas site) and Google Drive / OSC (for the datasets)
+### Database
 
-__Teams:__ Teams of four, chosen by students.
+The database is local SQLite. The committed database snapshot is `data/imdb_subset.db`, which is approximately 4.6 MB and contains:
 
-__Required files:__ Jupyter Notebook (`.ipynb`) data story; `.html` version (using "Download as" feature); and any imported `.py` files.
+| Table | Row Count |
+| --- | ---: |
+| `title_basics` | 4,537 |
+| `title_akas` | 19,552 |
+| `genres` | 6,331 |
+| `ratings` | 13,816 |
+| `joined_table` | 30,996 |
 
-__How to turn it in__: Upload html on Canvas and push all relevant files (not `.db` or `.csv` files) on Github.
- 
-__Deadline:__ By the start of class on Monday, November 18, 2024.
+The included subset contains movie records in `title_basics`, with years from 1981 through 1999. The notebook narrative also references a fuller IMDb database and wider date range from the original course project.
 
-## Examples of Data-Driven Storytelling
+### AI/ML Integrations
 
-Data-driven stories are a relatively common genre for online magazines and newspapers but, if you haven't noticed them before, here are a few links to get you started:
+No AI, machine learning, model inference, embedding, or LLM integration is implemented in this repository.
 
-- https://ncase.me/polygons/
+### Cloud, Deployment, and Infrastructure
 
-- https://www.slate.com/blogs/browbeat/2017/08/17/identifying_an_author_s_prose_can_be_as_simple_as_counting_how_much_they.html
+No cloud infrastructure, Dockerfile, Railway config, Vercel config, GitHub Actions workflow, or deployment pipeline is present. The project is designed to run locally in a Python/Jupyter environment.
 
-- https://projects.fivethirtyeight.com/redistricting-maps/ 
+### Authentication
 
-- https://pudding.cool/2023/10/genre/
+No authentication or authorization system is implemented.
 
-- https://ourworldindata.org/worlds-energy-problem
+### Environment Variables
 
-Obviously, these examples are quite sophisticated and professional, but they provide a strong sense of what's possible, as well as how much room there is in the genre for experimentation. 
+No environment variables are used by the repository.
 
-## References 
+## Tech Stack
 
-Non-Commercial Datasets. (Retrieved January 12, 2024). https://developer.imdb.com/non-commercial-datasets/
+### Languages
+
+- Python
+- SQL
+- Markdown
+
+### Frontend
+
+- Jupyter Notebook rendered Markdown, DataFrames, and inline plots
+
+### Backend
+
+- Local Python notebook execution
+- Python standard-library `sqlite3`
+
+### Database
+
+- SQLite
+
+### AI/ML
+
+- None implemented
+
+### Cloud/DevOps
+
+- None present
+
+### Testing
+
+- No automated test framework is present
+
+### Tools
+
+- Jupyter Notebook
+- Pandas
+- Matplotlib
+- NumPy
+- IPython display utilities
+
+## Repository Structure
+
+```text
+.
+├── IMDB_Underrated_Analysis.ipynb
+├── README.md
+├── LICENSE
+└── data
+    ├── imdb_subset.db
+    └── iso-language-codes.csv
+```
+
+| Path | Responsibility |
+| --- | --- |
+| `IMDB_Underrated_Analysis.ipynb` | Main data story, SQL analysis, Pandas transformations, and Matplotlib visualizations. |
+| `data/imdb_subset.db` | Local SQLite IMDb subset with normalized source tables and a precomputed `joined_table`. |
+| `data/iso-language-codes.csv` | Mapping of ISO alpha-2 language codes to English language names. |
+| `README.md` | Project documentation. |
+| `LICENSE` | MIT License for the repository. |
+
+## Setup Instructions
+
+### Prerequisites
+
+- Python 3.12 or compatible Python 3.x version.
+- Jupyter Notebook or JupyterLab.
+- SQLite support through Python's standard-library `sqlite3` module.
+
+### Installation
+
+Clone the repository:
+
+```bash
+git clone <repository-url>
+cd RelationalDataViz
+```
+
+Create and activate a virtual environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Install the notebook dependencies:
+
+```bash
+pip install notebook pandas matplotlib numpy ipython
+```
+
+There is currently no `requirements.txt`, `pyproject.toml`, or `environment.yml`, so dependencies are installed directly.
+
+### Database Setup
+
+The repository includes:
+
+```text
+data/imdb_subset.db
+```
+
+The notebook currently opens:
+
+```python
+sqlite3.connect("data/imdb_full.db")
+```
+
+That full database file is not committed to the repository. To run the notebook exactly as written, place the full IMDb SQLite database at:
+
+```text
+data/imdb_full.db
+```
+
+For local exploration with the committed subset, the available database is:
+
+```text
+data/imdb_subset.db
+```
+
+It already contains the tables required by the analysis, including `joined_table`.
+
+### Local Development
+
+Start Jupyter:
+
+```bash
+jupyter notebook
+```
+
+Open:
+
+```text
+IMDB_Underrated_Analysis.ipynb
+```
+
+Run the notebook cells from top to bottom after confirming that the database path points to the SQLite database you intend to analyze.
+
+### Build Commands
+
+There is no application build step. If you want to export the notebook to HTML for sharing, use Jupyter's export flow or run:
+
+```bash
+jupyter nbconvert --to html IMDB_Underrated_Analysis.ipynb
+```
+
+### Production Setup
+
+No production runtime is defined. This project is a local analytical notebook rather than a production service.
+
+## API / Workflow Documentation
+
+There are no HTTP APIs or service routes. The workflow is notebook-driven.
+
+### Core Data Preparation Query
+
+The notebook constructs a denormalized analysis table by joining the normalized IMDb tables:
+
+```sql
+SELECT
+    tb.titleId,
+    tb.titleType,
+    tb.primaryTitle,
+    tb.originalTitle,
+    tb.isAdult,
+    tb.startYear,
+    tb.endYear,
+    tb.runtimeMinutes,
+    r.averageRating,
+    r.numVotes,
+    ta.region,
+    ta.language,
+    g.genre
+FROM title_basics AS tb
+JOIN genres AS g ON tb.titleId = g.titleId
+JOIN ratings AS r ON tb.titleId = r.titleId
+JOIN title_akas AS ta ON tb.titleId = ta.titleId;
+```
+
+The result is converted into a Pandas DataFrame and written back to SQLite as `joined_table`.
+
+### Underrated Movie Definition
+
+The analysis uses a fixed threshold:
+
+```sql
+WHERE numVotes < 10000
+  AND averageRating > 7.5
+```
+
+The notebook explains this as an attempt to find movies that are rated highly by those who watched them but have not accumulated broad IMDb recognition.
+
+### Ranking Workflows
+
+The notebook includes SQL workflows for:
+
+- Top underrated films overall using `WHERE`, `GROUP BY`, `ORDER BY`, and `LIMIT`.
+- Top underrated film per genre using `ROW_NUMBER() OVER (PARTITION BY genre ...)`.
+- Top underrated film per region using `ROW_NUMBER() OVER (PARTITION BY region ...)`.
+- Top underrated films per decade using repeated decade-bounded SQL filters.
+- Top underrated films per language, followed by a Pandas merge with ISO language-code data.
+
+### Visualization Workflows
+
+Matplotlib is used to generate bar charts that summarize:
+
+- Number of underrated movies by decade.
+- Number of underrated movies by region, limited to the top 50 regions.
+- Number of underrated movies by genre.
+
+## Testing
+
+No automated tests are included. Validation is currently manual and notebook-based:
+
+- Run notebook cells sequentially.
+- Confirm SQLite queries execute successfully.
+- Inspect DataFrame outputs.
+- Inspect generated charts.
+
+Recommended future validation would include a lightweight test script that verifies:
+
+- Required database files exist.
+- Required tables and columns are present.
+- The `joined_table` can be rebuilt.
+- Core SQL queries return non-empty results for a known database snapshot.
+
+## Deployment
+
+No deployment configuration is present. The repository does not include:
+
+- Docker configuration.
+- Railway configuration.
+- Vercel configuration.
+- GitHub Actions workflows.
+- Cloud resource definitions.
+- Backend service runtime.
+
+The only supported execution mode discovered in the repository is local notebook execution.
+
+## Challenges / Engineering Decisions
+
+- **Relational modeling for analysis:** The source data is normalized across title, rating, alternate-title, and genre tables. The notebook creates `joined_table` to make repeated analytical queries simpler and faster to express.
+- **Defining "underrated" quantitatively:** The project turns a subjective cultural concept into a reproducible metric using vote count and average rating thresholds.
+- **Median calculation in SQLite:** SQLite does not provide a built-in median aggregate, so the notebook uses common table expressions and `ROW_NUMBER()` to compute median vote count.
+- **IMDb metadata ambiguity:** Region and language fields can be incomplete, user-contributed, or multi-valued across alternate titles. The notebook acknowledges that these values should be interpreted carefully.
+- **Notebook-first reproducibility:** Analysis, prose, tables, and visualizations are colocated in one notebook, making the project easy to read but dependent on the local data file path and notebook execution order.
+
+## Future Improvements
+
+- Add a `requirements.txt` or `pyproject.toml` to make dependency installation reproducible.
+- Add a small setup script that detects `imdb_full.db` versus `imdb_subset.db`.
+- Parameterize the underrated threshold for rating and vote count.
+- Move reusable SQL into separate `.sql` files.
+- Add a data validation notebook or test script for required tables, columns, and row counts.
+- Export the finished notebook to HTML and commit it as a portfolio artifact if file-size constraints allow.
+- Add chart image exports for README previews.
+- Document the provenance and generation process for `data/imdb_subset.db`.
+
+## Screenshots / Demo
+
+The repository does not currently include standalone screenshot assets. The notebook contains rendered outputs and visualizations that can be viewed by opening `IMDB_Underrated_Analysis.ipynb` in Jupyter.
+
+Suggested README preview assets for future updates:
+
+- `docs/images/underrated-by-decade.png`
+- `docs/images/underrated-by-region.png`
+- `docs/images/underrated-by-genre.png`
+
+## Author
+
+Aniket Gauba
+
+Project team credited in the notebook: Index-ception: Aniket Gauba, Fatima Abbas, Tri Dang, Amaya Joshi.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
